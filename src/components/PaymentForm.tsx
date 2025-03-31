@@ -57,8 +57,7 @@ export default function PaymentForm() {
         "http://localhost:3001/api/payments",
         {
           amount: Number.parseFloat(amount),
-          currency: "USD",
-          customerId: "cust_123"
+          currency: "USD"
         },
         {
           headers: { "Idempotency-Key": idempotencyKey }

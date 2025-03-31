@@ -60,8 +60,22 @@ export default function PaymentDashboard({
         "http://localhost:3002/api/payouts"
       );
 
-      setPayments(paymentsResponse.data);
-      setPayouts(payoutsResponse.data);
+      console.log(paymentsResponse.data, "payments response");
+      console.log(payoutsResponse.data, "payouts response");
+
+      // Sort payments and payouts by createdAt date (most recent first)
+      const sortedPayments = paymentsResponse.data.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      const sortedPayouts = payoutsResponse.data.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setPayments(sortedPayments);
+      setPayouts(sortedPayouts);
       setLastUpdated(new Date());
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -91,6 +105,7 @@ export default function PaymentDashboard({
   const allTransactions = [...payments, ...payouts].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+  console.log(allTransactions, "all transactions");
 
   const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalPayouts = payouts.reduce((sum, p) => sum + p.amount, 0);
@@ -231,7 +246,7 @@ export default function PaymentDashboard({
                         {trimPaymentId(transaction.paymentId)}
                       </TableCell>
                       <TableCell>
-                        {transaction.currency === "USD" ? (
+                        {transaction.status === "succeeded" ? (
                           <div className='flex items-center gap-2'>
                             <DollarSign className='h-4 w-4 text-green-600' />
                             <span>Payment</span>
@@ -244,7 +259,7 @@ export default function PaymentDashboard({
                         )}
                       </TableCell>
                       <TableCell>
-                        {transaction.currency === "USD" ? "$" : "₹"}
+                        {transaction.status === "succeeded" ? "$" : "₹"}
                         {transaction.amount.toFixed(2)}
                       </TableCell>
                       <TableCell>
