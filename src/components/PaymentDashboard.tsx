@@ -192,10 +192,10 @@ export default function PaymentDashboard({
     <Card className='shadow-md'>
       <CardHeader className='-pb-4 h-fit'>
         <CardTitle>Transaction History</CardTitle>
-        <CardDescription>
+        <CardDescription className='flex items-center justify-between'>
           View and manage all your payment and payout transactions
           <span className='ml-2 text-xs opacity-70'>
-            (Auto-refreshing, last updated: {lastUpdated.toLocaleTimeString()})
+            Last updated: {lastUpdated.toLocaleTimeString()}
           </span>
         </CardDescription>
       </CardHeader>
