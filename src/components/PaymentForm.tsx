@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import { Check, CreditCard, Loader2 } from "lucide-react";
@@ -30,6 +30,19 @@ export default function PaymentForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
+    null
+  );
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -53,10 +66,11 @@ export default function PaymentForm() {
       );
 
       setPaymentId(response.data.paymentId);
+      setPaymentStatus(response.data.status);
       setSuccess(true);
 
-      // Poll for payment status
-      pollPaymentStatus(response.data.paymentId);
+      // Start polling for payment status
+      startPollingPaymentStatus(response.data.paymentId);
     } catch (err) {
       console.log(err, "err in payment form");
       if (axios.isAxiosError(err) && err.response) {
@@ -69,9 +83,70 @@ export default function PaymentForm() {
     }
   };
 
-  const pollPaymentStatus = async (id: string): Promise<void> => {
-    // Implementation for polling payment status
-    console.log(`Polling status for payment ${id}`);
+  const startPollingPaymentStatus = (id: string) => {
+    // Clear any existing polling
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+
+    // Poll every 2 seconds
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:3001/api/payments/${id}`
+        );
+
+        setPaymentStatus(response.data.status);
+
+        // If payment is "succeeded", check for payout
+        if (response.data.status === "succeeded") {
+          // Check if there's a payout for this payment
+          const payoutsResponse = await axios.get(
+            "http://localhost:3002/api/payouts"
+          );
+
+          const matchingPayout = payoutsResponse.data.find(
+            (payout: any) => payout.paymentId === id
+          );
+
+          if (matchingPayout) {
+            setPaymentStatus(
+              `Payment succeeded, payout ${matchingPayout.status}`
+            );
+
+            // If payout is processed, we can stop polling
+            if (
+              matchingPayout.status === "processed" ||
+              matchingPayout.status === "succeeded"
+            ) {
+              clearInterval(interval);
+              setPollingInterval(null);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error polling payment status:", error);
+      }
+    }, 2000);
+
+    setPollingInterval(interval);
+  };
+
+  // Get a status message based on the current payment status
+  const getStatusMessage = () => {
+    if (!paymentStatus) return "Your payment is being processed";
+
+    switch (paymentStatus) {
+      case "processing":
+        return "Your payment is being processed";
+      case "succeeded":
+        return "Your payment has succeeded and is awaiting payout";
+      default:
+        if (paymentStatus.includes("payout")) {
+          return paymentStatus;
+        }
+        return `Payment status: ${paymentStatus}`;
+    }
   };
 
   return (
@@ -139,14 +214,17 @@ export default function PaymentForm() {
                 Payment Initiated
               </AlertTitle>
               <AlertDescription className='text-emerald-700'>
-                Your payment is being processed and will be converted to INR for
-                payout.
+                {getStatusMessage()}
               </AlertDescription>
             </Alert>
 
             <div className='rounded-md bg-background p-4'>
               <div className='text-sm font-medium'>Payment ID</div>
               <div className='mt-1 font-mono text-xs'>{paymentId}</div>
+              <div className='mt-2 text-sm font-medium'>Status</div>
+              <div className='mt-1 text-xs'>
+                {paymentStatus || "Processing..."}
+              </div>
             </div>
           </div>
         )}
@@ -160,7 +238,14 @@ export default function PaymentForm() {
               setSuccess(false);
               setAmount("");
               setPaymentId(null);
+              setPaymentStatus(null);
               setError(null);
+
+              // Clear polling interval
+              if (pollingInterval) {
+                clearInterval(pollingInterval);
+                setPollingInterval(null);
+              }
             }}
           >
             Make Another Payment

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { ArrowDownUp, DollarSign, IndianRupee, Loader2 } from "lucide-react";
 
@@ -48,31 +48,45 @@ export default function PaymentDashboard({
   const [payments, setPayments] = useState<Payment[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const paymentsResponse = await axios.get<Payment[]>(
-          "http://localhost:3001/api/payments"
-        );
-        const payoutsResponse = await axios.get<Payout[]>(
-          "http://localhost:3002/api/payouts"
-        );
+  // Create a fetchData function that can be called multiple times
+  const fetchData = useCallback(async () => {
+    try {
+      const paymentsResponse = await axios.get<Payment[]>(
+        "http://localhost:3001/api/payments"
+      );
+      const payoutsResponse = await axios.get<Payout[]>(
+        "http://localhost:3002/api/payouts"
+      );
 
-        console.log(paymentsResponse.data, "payments response");
-        console.log(payoutsResponse.data, "payouts response");
-
-        setPayments(paymentsResponse.data);
-        setPayouts(payoutsResponse.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+      setPayments(paymentsResponse.data);
+      setPayouts(payoutsResponse.data);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Set up polling
+  useEffect(() => {
+    // Poll every 3 seconds for data updates - Make this configurable, 3 seconds is just for testing - not feasible for production
+    const pollingInterval = setInterval(() => {
+      fetchData();
+    }, 3000);
+
+    // Clean up on unmount
+    return () => {
+      clearInterval(pollingInterval);
+    };
+  }, [fetchData]);
 
   const allTransactions = [...payments, ...payouts].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -128,6 +142,9 @@ export default function PaymentDashboard({
           </h2>
           <p className='text-muted-foreground'>
             Monitor your transaction activity
+            <span className='ml-2 text-xs opacity-70'>
+              (Last updated: {lastUpdated.toLocaleTimeString()})
+            </span>
           </p>
         </div>
 
@@ -177,6 +194,9 @@ export default function PaymentDashboard({
         <CardTitle>Transaction History</CardTitle>
         <CardDescription>
           View and manage all your payment and payout transactions
+          <span className='ml-2 text-xs opacity-70'>
+            (Auto-refreshing, last updated: {lastUpdated.toLocaleTimeString()})
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent className='p-0'>
