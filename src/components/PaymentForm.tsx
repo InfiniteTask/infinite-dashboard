@@ -75,14 +75,14 @@ export default function PaymentForm() {
   };
 
   return (
-    <Card className='w-full max-w-md mx-auto'>
-      <CardHeader>
+    <Card className='h-full shadow-md'>
+      <CardHeader className='rounded-t-lg'>
         <CardTitle>Make Payment</CardTitle>
         <CardDescription>
           Process a USD payment that will be converted to INR for payout
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className='pt-6'>
         {!success ? (
           <form onSubmit={handleSubmit} className='space-y-4'>
             <div className='space-y-2'>
@@ -100,7 +100,7 @@ export default function PaymentForm() {
                   step='0.01'
                   required
                   placeholder='0.00'
-                  className='pl-7'
+                  className='pl-7 bg-background'
                 />
               </div>
             </div>
@@ -140,7 +140,7 @@ export default function PaymentForm() {
               </AlertDescription>
             </Alert>
 
-            <div className='rounded-md bg-muted p-4'>
+            <div className='rounded-md bg-background p-4'>
               <div className='text-sm font-medium'>Payment ID</div>
               <div className='mt-1 font-mono text-xs'>{paymentId}</div>
             </div>
@@ -148,7 +148,7 @@ export default function PaymentForm() {
         )}
       </CardContent>
       {success && (
-        <CardFooter>
+        <CardFooter className='bg-muted/40 rounded-b-lg'>
           <Button
             variant='outline'
             className='w-full'

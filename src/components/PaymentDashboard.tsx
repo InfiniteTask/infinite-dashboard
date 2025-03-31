@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Payment {
-  id: string;
+  paymentId: string;
   amount: number;
   currency: string;
   status: string;
@@ -31,14 +31,20 @@ interface Payment {
 }
 
 interface Payout {
-  id: string;
+  paymentId: string;
   amount: number;
   currency: string;
   status: string;
   createdAt: string;
 }
 
-export default function PaymentDashboard() {
+interface PaymentDashboardProps {
+  showTablesOnly?: boolean;
+}
+
+export default function PaymentDashboard({
+  showTablesOnly = false
+}: PaymentDashboardProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -46,13 +52,15 @@ export default function PaymentDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // In a real app, you'd fetch actual data from your API
         const paymentsResponse = await axios.get<Payment[]>(
           "http://localhost:3001/api/payments"
         );
         const payoutsResponse = await axios.get<Payout[]>(
           "http://localhost:3002/api/payouts"
         );
+
+        console.log(paymentsResponse.data, "payments response");
+        console.log(payoutsResponse.data, "payouts response");
 
         setPayments(paymentsResponse.data);
         setPayouts(payoutsResponse.data);
@@ -64,46 +72,6 @@ export default function PaymentDashboard() {
     };
 
     fetchData();
-
-    // // For demo purposes, let's add mock data if API is not available
-    // // This would be removed in a real implementation
-    // if (process.env.NODE_ENV === "development") {
-    //   setPayments([
-    //     {
-    //       id: "pay_123",
-    //       amount: 100,
-    //       currency: "USD",
-    //       status: "succeeded",
-    //       createdAt: new Date().toISOString()
-    //     },
-    //     {
-    //       id: "pay_124",
-    //       amount: 250,
-    //       currency: "USD",
-    //       status: "succeeded",
-    //       createdAt: new Date().toISOString()
-    //     }
-    //   ]);
-
-    //   setPayouts([
-    //     {
-    //       id: "pout_123",
-    //       amount: 8325,
-    //       currency: "INR",
-    //       status: "processed",
-    //       createdAt: new Date().toISOString()
-    //     },
-    //     {
-    //       id: "pout_124",
-    //       amount: 20812.5,
-    //       currency: "INR",
-    //       status: "processed",
-    //       createdAt: new Date().toISOString()
-    //     }
-    //   ]);
-
-    //   setLoading(false);
-    // }
   }, []);
 
   const allTransactions = [...payments, ...payouts].sort(
@@ -138,196 +106,229 @@ export default function PaymentDashboard() {
     }
   };
 
+  const trimPaymentId = (id: string) => {
+    return id.slice(0, 4) + "..." + id.slice(-4);
+  };
+
   if (loading) {
     return (
-      <div className='flex h-[50vh] w-full items-center justify-center'>
+      <div className='flex h-[200px] w-full items-center justify-center'>
         <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
       </div>
     );
   }
 
+  // Summary section (only shown when showTablesOnly is false)
+  if (!showTablesOnly) {
+    return (
+      <div className='h-full'>
+        <div className='mb-4'>
+          <h2 className='text-3xl font-bold tracking-tight'>
+            Payments & Payouts
+          </h2>
+          <p className='text-muted-foreground'>
+            Monitor your transaction activity
+          </p>
+        </div>
+
+        <div className='grid gap-4 grid-cols-1 sm:grid-cols-2'>
+          <Card className='shadow-md'>
+            <CardHeader className='rounded-t-lg'>
+              <CardTitle className='flex items-center justify-between'>
+                <span>Total USD Payments</span>
+                <DollarSign className='h-5 w-5 text-green-600' />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='pt-6'>
+              <div className='text-3xl font-bold'>
+                ${totalPayments.toFixed(2)}
+              </div>
+              <p className='text-sm text-muted-foreground mt-2'>
+                {payments.length} transaction{payments.length !== 1 ? "s" : ""}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className='shadow-md'>
+            <CardHeader className='rounded-t-lg'>
+              <CardTitle className='flex items-center justify-between'>
+                <span>Total INR Payouts</span>
+                <IndianRupee className='h-5 w-5 text-blue-600' />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='pt-6'>
+              <div className='text-3xl font-bold'>
+                ₹{totalPayouts.toFixed(2)}
+              </div>
+              <p className='text-sm text-muted-foreground mt-2'>
+                {payouts.length} transaction{payouts.length !== 1 ? "s" : ""}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Tables section
   return (
-    <div className='space-y-8'>
-      <div>
-        <h2 className='text-3xl font-bold tracking-tight'>
-          Payments & Payouts
-        </h2>
-        <p className='text-muted-foreground'>
-          Monitor your transaction activity
-        </p>
-      </div>
+    <Card className='shadow-md'>
+      <CardHeader className='-pb-4 h-fit'>
+        <CardTitle>Transaction History</CardTitle>
+        <CardDescription>
+          View and manage all your payment and payout transactions
+        </CardDescription>
+      </CardHeader>
+      <CardContent className='p-0'>
+        <Tabs defaultValue='all' className='w-full'>
+          <div className='px-6 pt-2 border-b'>
+            <TabsList className='w-full sm:w-auto grid grid-cols-3 sm:inline-flex mb-2'>
+              <TabsTrigger value='all'>All Transactions</TabsTrigger>
+              <TabsTrigger value='payments'>Payments</TabsTrigger>
+              <TabsTrigger value='payouts'>Payouts</TabsTrigger>
+            </TabsList>
+          </div>
 
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Total USD Payments
-            </CardTitle>
-            <DollarSign className='h-4 w-4 text-muted-foreground' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>
-              ${totalPayments.toFixed(2)}
+          <TabsContent value='all' className='m-0'>
+            <div className='h-[400px] overflow-hidden flex flex-col'>
+              <div className=''>
+                <Table>
+                  <TableHeader className='sticky top-0 z-10'>
+                    <TableRow>
+                      <TableHead className='w-[200px]'>ID</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className='hidden md:table-cell'>
+                        Date
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                </Table>
+              </div>
+              <div className='overflow-auto flex-1'>
+                <Table>
+                  <TableBody>
+                    {allTransactions.map((transaction) => (
+                      <TableRow
+                        key={transaction.paymentId}
+                        className='bg-background hover:bg-muted/20'
+                      >
+                        <TableCell className='font-mono text-xs'>
+                          {trimPaymentId(transaction.paymentId)}
+                        </TableCell>
+                        <TableCell>
+                          {transaction.currency === "USD" ? (
+                            <div className='flex items-center gap-2'>
+                              <DollarSign className='h-4 w-4 text-green-600' />
+                              <span>Payment</span>
+                            </div>
+                          ) : (
+                            <div className='flex items-center gap-2'>
+                              <IndianRupee className='h-4 w-4 text-blue-600' />
+                              <span>Payout</span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {transaction.currency === "USD" ? "$" : "₹"}
+                          {transaction.amount.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(transaction.status)}
+                        </TableCell>
+                        <TableCell className='hidden md:table-cell'>
+                          {new Date(transaction.createdAt).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
-            <p className='text-xs text-muted-foreground'>
-              {payments.length} transaction{payments.length !== 1 ? "s" : ""}
-            </p>
-          </CardContent>
-        </Card>
+          </TabsContent>
 
-        <Card>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Total INR Payouts
-            </CardTitle>
-            <IndianRupee className='h-4 w-4 text-muted-foreground' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>₹{totalPayouts.toFixed(2)}</div>
-            <p className='text-xs text-muted-foreground'>
-              {payouts.length} transaction{payouts.length !== 1 ? "s" : ""}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue='all' className='w-full'>
-        <TabsList>
-          <TabsTrigger value='all'>All Transactions</TabsTrigger>
-          <TabsTrigger value='payments'>Payments</TabsTrigger>
-          <TabsTrigger value='payouts'>Payouts</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value='all' className='mt-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>
-                A list of all your recent payment and payout transactions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className='hidden md:table-cell'>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell className='font-mono text-xs'>
-                        {transaction.id}
-                      </TableCell>
-                      <TableCell>
-                        {transaction.currency === "USD" ? (
-                          <div className='flex items-center gap-2'>
-                            <DollarSign className='h-4 w-4' />
-                            <span>Payment</span>
-                          </div>
-                        ) : (
-                          <div className='flex items-center gap-2'>
-                            <IndianRupee className='h-4 w-4' />
-                            <span>Payout</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {transaction.currency === "USD" ? "$" : "₹"}
-                        {transaction.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(transaction.status)}
-                      </TableCell>
-                      <TableCell className='hidden md:table-cell'>
-                        {new Date(transaction.createdAt).toLocaleString()}
-                      </TableCell>
+          <TabsContent value='payments' className='m-0'>
+            <div className='h-[400px] overflow-hidden flex flex-col'>
+              <div className='bg-muted/30'>
+                <Table>
+                  <TableHeader className='sticky top-0 bg-muted/60 z-10'>
+                    <TableRow>
+                      <TableHead className='w-[200px]'>ID</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className='hidden md:table-cell'>
+                        Date
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  </TableHeader>
+                </Table>
+              </div>
+              <div className='overflow-auto flex-1'>
+                <Table>
+                  <TableBody>
+                    {payments.map((payment) => (
+                      <TableRow
+                        key={payment.paymentId}
+                        className='bg-background hover:bg-muted/20'
+                      >
+                        <TableCell className='font-mono text-xs'>
+                          {trimPaymentId(payment.paymentId)}
+                        </TableCell>
+                        <TableCell>${payment.amount.toFixed(2)}</TableCell>
+                        <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                        <TableCell className='hidden md:table-cell'>
+                          {new Date(payment.createdAt).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </TabsContent>
 
-        <TabsContent value='payments' className='mt-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Payments</CardTitle>
-              <CardDescription>
-                A list of all your USD payment transactions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className='hidden md:table-cell'>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className='font-mono text-xs'>
-                        {payment.id}
-                      </TableCell>
-                      <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                      <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                      <TableCell className='hidden md:table-cell'>
-                        {new Date(payment.createdAt).toLocaleString()}
-                      </TableCell>
+          <TabsContent value='payouts' className='m-0'>
+            <div className='h-[400px] overflow-hidden flex flex-col'>
+              <div className='bg-muted/30'>
+                <Table>
+                  <TableHeader className='sticky top-0 bg-muted/60 z-10'>
+                    <TableRow>
+                      <TableHead className='w-[200px]'>ID</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className='hidden md:table-cell'>
+                        Date
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value='payouts' className='mt-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Payouts</CardTitle>
-              <CardDescription>
-                A list of all your INR payout transactions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className='hidden md:table-cell'>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payouts.map((payout) => (
-                    <TableRow key={payout.id}>
-                      <TableCell className='font-mono text-xs'>
-                        {payout.id}
-                      </TableCell>
-                      <TableCell>₹{payout.amount.toFixed(2)}</TableCell>
-                      <TableCell>{getStatusBadge(payout.status)}</TableCell>
-                      <TableCell className='hidden md:table-cell'>
-                        {new Date(payout.createdAt).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                  </TableHeader>
+                </Table>
+              </div>
+              <div className='overflow-auto flex-1'>
+                <Table>
+                  <TableBody>
+                    {payouts.map((payout) => (
+                      <TableRow
+                        key={payout.paymentId}
+                        className='bg-background hover:bg-muted/20'
+                      >
+                        <TableCell className='font-mono text-xs'>
+                          {trimPaymentId(payout.paymentId)}
+                        </TableCell>
+                        <TableCell>₹{payout.amount.toFixed(2)}</TableCell>
+                        <TableCell>{getStatusBadge(payout.status)}</TableCell>
+                        <TableCell className='hidden md:table-cell'>
+                          {new Date(payout.createdAt).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 }
