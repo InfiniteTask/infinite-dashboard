@@ -190,141 +190,117 @@ export default function PaymentDashboard({
           </div>
 
           <TabsContent value='all' className='m-0'>
-            <div className='h-[400px] overflow-hidden flex flex-col'>
-              <div className=''>
-                <Table>
-                  <TableHeader className='sticky top-0 z-10'>
-                    <TableRow>
-                      <TableHead className='w-[200px]'>ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className='hidden md:table-cell'>
-                        Date
-                      </TableHead>
+            <div className='h-[400px] overflow-auto'>
+              <Table>
+                <TableHeader className='sticky top-0 z-10 bg-background'>
+                  <TableRow>
+                    <TableHead className='w-[200px]'>ID</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className='hidden md:table-cell'>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allTransactions.map((transaction) => (
+                    <TableRow
+                      key={transaction.paymentId}
+                      className='bg-background hover:bg-muted/20'
+                    >
+                      <TableCell className='font-mono text-xs'>
+                        {trimPaymentId(transaction.paymentId)}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.currency === "USD" ? (
+                          <div className='flex items-center gap-2'>
+                            <DollarSign className='h-4 w-4 text-green-600' />
+                            <span>Payment</span>
+                          </div>
+                        ) : (
+                          <div className='flex items-center gap-2'>
+                            <IndianRupee className='h-4 w-4 text-blue-600' />
+                            <span>Payout</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.currency === "USD" ? "$" : "₹"}
+                        {transaction.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(transaction.status)}
+                      </TableCell>
+                      <TableCell className='hidden md:table-cell'>
+                        {new Date(transaction.createdAt).toLocaleString()}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                </Table>
-              </div>
-              <div className='overflow-auto flex-1'>
-                <Table>
-                  <TableBody>
-                    {allTransactions.map((transaction) => (
-                      <TableRow
-                        key={transaction.paymentId}
-                        className='bg-background hover:bg-muted/20'
-                      >
-                        <TableCell className='font-mono text-xs'>
-                          {trimPaymentId(transaction.paymentId)}
-                        </TableCell>
-                        <TableCell>
-                          {transaction.currency === "USD" ? (
-                            <div className='flex items-center gap-2'>
-                              <DollarSign className='h-4 w-4 text-green-600' />
-                              <span>Payment</span>
-                            </div>
-                          ) : (
-                            <div className='flex items-center gap-2'>
-                              <IndianRupee className='h-4 w-4 text-blue-600' />
-                              <span>Payout</span>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {transaction.currency === "USD" ? "$" : "₹"}
-                          {transaction.amount.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(transaction.status)}
-                        </TableCell>
-                        <TableCell className='hidden md:table-cell'>
-                          {new Date(transaction.createdAt).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </TabsContent>
 
           <TabsContent value='payments' className='m-0'>
-            <div className='h-[400px] overflow-hidden flex flex-col'>
-              <div className='bg-muted/30'>
-                <Table>
-                  <TableHeader className='sticky top-0 bg-muted/60 z-10'>
-                    <TableRow>
-                      <TableHead className='w-[200px]'>ID</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className='hidden md:table-cell'>
-                        Date
-                      </TableHead>
+            <div className='h-[400px] overflow-auto'>
+              <Table>
+                <TableHeader className='sticky top-0 z-10 bg-background'>
+                  <TableRow>
+                    <TableHead className='w-[200px]'>ID</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className='hidden md:table-cell'>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payments.map((payment) => (
+                    <TableRow
+                      key={payment.paymentId}
+                      className='bg-background hover:bg-muted/20'
+                    >
+                      <TableCell className='font-mono text-xs'>
+                        {trimPaymentId(payment.paymentId)}
+                      </TableCell>
+                      <TableCell>${payment.amount.toFixed(2)}</TableCell>
+                      <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                      <TableCell className='hidden md:table-cell'>
+                        {new Date(payment.createdAt).toLocaleString()}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                </Table>
-              </div>
-              <div className='overflow-auto flex-1'>
-                <Table>
-                  <TableBody>
-                    {payments.map((payment) => (
-                      <TableRow
-                        key={payment.paymentId}
-                        className='bg-background hover:bg-muted/20'
-                      >
-                        <TableCell className='font-mono text-xs'>
-                          {trimPaymentId(payment.paymentId)}
-                        </TableCell>
-                        <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                        <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                        <TableCell className='hidden md:table-cell'>
-                          {new Date(payment.createdAt).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </TabsContent>
 
           <TabsContent value='payouts' className='m-0'>
-            <div className='h-[400px] overflow-hidden flex flex-col'>
-              <div className='bg-muted/30'>
-                <Table>
-                  <TableHeader className='sticky top-0 bg-muted/60 z-10'>
-                    <TableRow>
-                      <TableHead className='w-[200px]'>ID</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className='hidden md:table-cell'>
-                        Date
-                      </TableHead>
+            <div className='h-[400px] overflow-auto'>
+              <Table>
+                <TableHeader className='sticky top-0 z-10 bg-background'>
+                  <TableRow>
+                    <TableHead className='w-[200px]'>ID</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className='hidden md:table-cell'>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payouts.map((payout) => (
+                    <TableRow
+                      key={payout.paymentId}
+                      className='bg-background hover:bg-muted/20'
+                    >
+                      <TableCell className='font-mono text-xs'>
+                        {trimPaymentId(payout.paymentId)}
+                      </TableCell>
+                      <TableCell>₹{payout.amount.toFixed(2)}</TableCell>
+                      <TableCell>{getStatusBadge(payout.status)}</TableCell>
+                      <TableCell className='hidden md:table-cell'>
+                        {new Date(payout.createdAt).toLocaleString()}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                </Table>
-              </div>
-              <div className='overflow-auto flex-1'>
-                <Table>
-                  <TableBody>
-                    {payouts.map((payout) => (
-                      <TableRow
-                        key={payout.paymentId}
-                        className='bg-background hover:bg-muted/20'
-                      >
-                        <TableCell className='font-mono text-xs'>
-                          {trimPaymentId(payout.paymentId)}
-                        </TableCell>
-                        <TableCell>₹{payout.amount.toFixed(2)}</TableCell>
-                        <TableCell>{getStatusBadge(payout.status)}</TableCell>
-                        <TableCell className='hidden md:table-cell'>
-                          {new Date(payout.createdAt).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </TabsContent>
         </Tabs>
